@@ -9,4 +9,7 @@ Be sure to give them colors based on the JSON data. The map looks a bit busy, ri
 Allow the user to show or hide routes. One way is to use an [AlertDialog](http://www.learn-android-easily.com/2013/01/adding-check-boxes-in-dialog.html).
 Another is to embed some [Checkboxes](https://developer.android.com/guide/topics/ui/controls/checkbox.html) in a view that you can show/hide.
 
-Extra challenge: Associate the stops with routes somehow and only show the stops for the selected routes.
+Extra challenges, if you want:
+* Write the code for pulling and showing bus routes from scratch, without looking at the code I wrote!
+* Associate the stops with routes somehow and only show the stops for the selected routes
+* After I select the routes I want to see, zoom out the map so I can see all of the stops
