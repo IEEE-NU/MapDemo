@@ -10,6 +10,11 @@ import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.Button;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -18,16 +23,29 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View
+        .OnClickListener, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient
+        .ConnectionCallbacks {
 
     private GoogleMap mMap;
     @BindView(R.id.button2) Button mButton2;
     private GoogleApiClient mGoogleApiClient;
+
+    List<Stop> mStopList;
+    private List<Marker> mMarkerList;
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
@@ -45,7 +63,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
-        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation
+                (mGoogleApiClient);
         if (mLastLocation != null) {
         }
     }
@@ -56,6 +75,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public class Person {
         String name;
+
         public Person(String name, String address, Person mom) {
             this.name = name;
         }
@@ -76,6 +96,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .addApi(LocationServices.API)
                 .build();
         mGoogleApiClient.connect();
+
+        mStopList = new ArrayList<>();
+
+        getStops();
+    }
+
+    public void getStops() {
+        final RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest("https://northwestern.doublemap" +
+                ".com/map/v2/stops", new Response.Listener<JSONArray>() {
+            @Override
+            public void onResponse(JSONArray response) {
+                try {
+                    for (int i = 0; i < response.length(); i++) {
+                        JSONObject object = response.getJSONObject(i);
+                        Stop stop = new Stop();
+                        stop.id = object.getInt("id");
+                        stop.name = object.getString("name");
+                        stop.lat = object.getDouble("lat");
+                        stop.lon = object.getDouble("lon");
+
+                        mStopList.add(stop);
+                    }
+                    drawStops();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+            }
+        });
+
+        requestQueue.add(jsonArrayRequest);
     }
 
     @Override
@@ -103,6 +159,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mButton2.setOnClickListener(this);
         mButton2.setVisibility(View.VISIBLE);
         mButton2.getVisibility();
+
+        drawStops();
+    }
+
+    public void drawStops() {
+        if (mMap == null) {
+            return;
+        }
+        if (mStopList.size() == 0) {
+            return;
+        }
+
+        mMarkerList = new ArrayList<>();
+        for (int i = 0; i < mStopList.size(); i++) {
+            Stop stop = mStopList.get(i);
+            Marker marker = mMap.addMarker(new MarkerOptions().position(stop.getLatLng()).title(stop.name));
+            mMarkerList.add(marker);
+        }
     }
 
     @Override
