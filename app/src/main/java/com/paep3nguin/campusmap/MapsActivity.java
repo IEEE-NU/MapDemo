@@ -1,5 +1,6 @@
 package com.paep3nguin.campusmap;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -41,11 +42,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         .ConnectionCallbacks {
 
     private GoogleMap mMap;
-    @BindView(R.id.button2) Button mButton2;
+    @BindView(R.id.showStopList) Button mShowStopList;
     private GoogleApiClient mGoogleApiClient;
 
-    List<Stop> mStopList;
+    ArrayList<Stop> mStopList;
     private List<Marker> mMarkerList;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
+        ButterKnife.bind(this);
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        mGoogleApiClient.connect();
+
+        mShowStopList.setOnClickListener(this);
+
+        mStopList = new ArrayList<>();
+
+        getStops();
+    }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
@@ -73,35 +98,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onConnectionSuspended(int i) {
     }
 
-    public class Person {
-        String name;
-
-        public Person(String name, String address, Person mom) {
-            this.name = name;
-        }
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
-        ButterKnife.bind(this);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
-
-        mStopList = new ArrayList<>();
-
-        getStops();
-    }
-
     public void getStops() {
         final RequestQueue requestQueue = Volley.newRequestQueue(this);
 
@@ -120,6 +116,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         mStopList.add(stop);
                     }
+                    mShowStopList.setEnabled(true);
                     drawStops();
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -156,9 +153,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-        mButton2.setOnClickListener(this);
-        mButton2.setVisibility(View.VISIBLE);
-        mButton2.getVisibility();
 
         drawStops();
     }
@@ -174,22 +168,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMarkerList = new ArrayList<>();
         for (int i = 0; i < mStopList.size(); i++) {
             Stop stop = mStopList.get(i);
-            Marker marker = mMap.addMarker(new MarkerOptions().position(stop.getLatLng()).title(stop.name));
+            Marker marker = mMap.addMarker(new MarkerOptions().position(stop.getLatLng())
+                    .title(stop.name));
             mMarkerList.add(marker);
         }
     }
 
     @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.button2:
-                break;
-            case R.id.button1:
-                break;
-        }
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
     }
 
     @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+    public void onClick(View v) {
+        if (v.getId() == R.id.showStopList) {
+            Intent startIntent = new Intent(this, StopListActivity.class);
+            startIntent.putExtra("stopList", mStopList);
+            startActivity(startIntent);
+        }
     }
 }
